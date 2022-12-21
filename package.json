@@ -15,7 +15,7 @@
   "types": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/championswimmer/vuex-persist.git"
+    "url": "git+https://github.com/nag5000/vuex-persist.git"
   },
   "scripts": {
     "doc:clean": "rimraf docs",
