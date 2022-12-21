@@ -1,3 +1,12 @@
+# @nag5000/vuex-persist (fork)
+
+[![npm](https://img.shields.io/npm/v/@nag5000/vuex-persist.svg)](http://npmjs.com/@nag5000/vuex-persist)
+[![npm:size:gzip](https://img.shields.io/bundlephobia/minzip/@nag5000/vuex-persist.svg?label=npm:size:gzip)](https://bundlephobia.com/result?p=@nag5000/vuex-persist)
+[![umd:min:gzip](https://img.badgesize.io/https://unpkg.com/@nag5000/vuex-persist?compression=gzip&label=umd:min:gzip)](https://unpkg.com/@nag5000/vuex-persist)
+[![umd:min:brotli](https://img.badgesize.io/https://cdn.jsdelivr.net/npm/@nag5000/vuex-persist?compression=brotli&label=umd:min:brotli)](https://cdn.jsdelivr.net/npm/@nag5000/vuex-persist)
+
+**What's new in this fork:** see v4.x in CHANGELOG.md
+
 # vuex-persist
 
 A Typescript-ready [Vuex](https://vuex.vuejs.org/) plugin that enables
