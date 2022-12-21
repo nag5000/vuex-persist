@@ -39,6 +39,7 @@ Cookies or localStorage.
     - [Steps](#steps)
     - [Constructor Parameters -](#constructor-parameters)
     - [Usage Notes](#usage-notes)
+      - [Deep merge](#deep-merge)
       - [Reducer](#reducer)
       - [Circular States](#circular-states)
   - [Examples](#examples)
@@ -65,7 +66,7 @@ Cookies or localStorage.
 - Works perfectly with modules in store
 - Ability to save partial store, using a `reducer` function
 - Automatically restores store when app loads
-- You can create mulitple VuexPersistence instances if you want to -
+- You can create multiple VuexPersistence instances if you want to -
   - Save some parts of the store to localStorage, some to sessionStorage
   - Trigger saving to localStorage on data download, saving to cookies on authentication result
 
@@ -196,19 +197,41 @@ When creating the VuexPersistence object, we pass an `options` object
 of type `PersistOptions`.
 Here are the properties, and what they mean -
 
-| Property        | Type                                   | Description                                                                                                                                                                          |
-| --------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| key             | string                                 | The key to store the state in the storage <br>_**Default: 'vuex'**_                                                                                                                  |
-| storage         | Storage (Web API)                      | localStorage, sessionStorage, localforage or your custom Storage object. <br>Must implement getItem, setItem, clear etc. <br> _**Default: window.localStorage**_                     |
-| saveState       | function<br> (key, state[, storage])   | If not using storage, this custom function handles <br>saving state to persistence                                                                                                   |
-| restoreState    | function<br> (key[, storage]) => state | If not using storage, this custom function handles <br>retrieving state from storage                                                                                                 |
-| reducer         | function<br> (state) => object         | State reducer. reduces state to only those values you want to save. <br>By default, saves entire state                                                                               |
-| filter          | function<br> (mutation) => boolean     | Mutation filter. Look at `mutation.type` and return true <br>for only those ones which you want a persistence write to be triggered for. <br> Default returns true for all mutations |
-| modules         | string[]                               | List of modules you want to persist. (Do not write your own reducer if you want to use this)                                                                                         |
-| asyncStorage    | boolean                                | Denotes if the store uses Promises (like localforage) or not (you must set this to true when using something like localforage) <br>_**Default: false**_                                                                                                |
-| supportCircular | boolean                                | Denotes if the state has any circular references to itself (state.x === state) <br>_**Default: false**_                                                                                                       |
+| Property        | Type                                   | Description                                                                                                                                                                                                         |
+| --------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| key             | string                                 | The key to store the state in the storage <br>_**Default: 'vuex'**_                                                                                                                                                 |
+| storage         | Storage (Web API)                      | localStorage, sessionStorage, localforage or your custom Storage object. <br>Must implement getItem, setItem, clear etc. <br> _**Default: window.localStorage**_                                                    |
+| saveState       | function<br> (key, state[, storage])   | If not using storage, this custom function handles <br>saving state to persistence                                                                                                                                  |
+| restoreState    | function<br> (key[, storage]) => state | If not using storage, this custom function handles <br>retrieving state from storage                                                                                                                                |
+| reducer         | function<br> (state) => object         | State reducer. reduces state to only those values you want to save. <br>By default, saves entire state                                                                                                              |
+| filter          | function<br> (mutation) => boolean     | Mutation filter. Look at `mutation.type` and return true <br>for only those ones which you want a persistence write to be triggered for. <br> Default returns true for all mutations                                |
+| modules         | string[]                               | List of modules you want to persist. (Do not write your own reducer if you want to use this)                                                                                                                        |
+| asyncStorage    | boolean                                | Denotes if the store uses Promises (like localforage) or not (you must set this to true when using something like localforage) <br>_**Default: false**_                                                             |
+| JSON            | JSON                                   | JSON implementation with `parse` and `stringify` methods. By default native `window.JSON` is used. If you want to support serializing circular json objects, you can use `flatted` package here.                    |
+| merge           | function<br> (state1, state2) => state | Function to merge two states into a new one. Must create a new object, so that neither of arguments is modified. By default, we do shallow merge using `Object.assign`. You can use this to do `deepmerge` instead. |
 
 ### Usage Notes
+
+#### Deep merge
+
+By default, when the state is restored from the storage, it merges shallowly with
+the initial state.
+
+For deep merging, provide custom `merge` function in the options. For example, you
+can use `deepmerge` package:
+
+```
+npm install deepmerge
+```
+
+``` javascript
+import deepmerge from 'deepmerge'
+
+const persist = new VuexPersistence({
+  merge: (into, from) => deepmerge(into, from),
+  ...
+})
+```
 
 #### Reducer
 
@@ -249,11 +272,13 @@ You'll need to install `flatted`
 npm install flatted
 ```
 
-And when constructing the store, add `supportCircular` flag
+And when constructing the store, set `JSON` option to `FlattedJSON`:
 
 ```js
+import FlattedJSON from 'flatted'
+
 new VuexPersistence({
-  supportCircular: true,
+  JSON: FlattedJSON,
   ...
 })
 ```

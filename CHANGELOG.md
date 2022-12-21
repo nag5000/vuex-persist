@@ -1,5 +1,13 @@
 # vuex-persist CHANGELOG
 
+## 4.0.0
+
+- **BREAKING**: remove `deepmerge` dependency. By default old and new states are merged shallowly now. This can cause difference in behaviour on how you expect old state and new state to be merged.
+- **BREAKING**: remove `mergeOption` option
+- **BREAKING**: remove `supportCircular` option and `flatted` dependency.
+- add `merge` option. Using this option you can provide your own merge strategy (e.g. `deepmerge`) instead of the new default behaviour (shallow merge).
+- add `JSON` option. Using this option you can support serializing circular json objects via `flatted` package.
+
 ## 3.0.0
 
 - **BREAKING**: replaced `lodash.merge` with `deepmerge` 

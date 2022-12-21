@@ -3,7 +3,6 @@
  */
 import { MutationPayload } from 'vuex'
 import { AsyncStorage } from './AsyncStorage'
-import { MergeOptionType } from './utils'
 
 export interface PersistOptions<S> {
   /**
@@ -70,23 +69,20 @@ export interface PersistOptions<S> {
   asyncStorage?: boolean
 
   /**
-   * Support serializing circular json objects
-   * <pre>
-   *   let x = {a: 10}
-   *   x.b = x
-   *   console.log(x.a) // 10
-   *   console.log(x.b.a) // 10
-   *   console.log(x.b.b.a) // 10
-   * </pre>
-   * @default false
-   *
+   * JSON implementation with <code>parse</code> and <code>stringify</code> methods.
+   * By default native <code>window.JSON</code> is used.
+   * If you want to support serializing circular json objects,
+   * you can use <code>flatted</code> package here.
    */
-  supportCircular?: boolean
+  JSON?: JSON
 
   /**
-   * Whether to replace or concat arrays when merging
-   * saved state with restored state
-   * defaults to replacing arrays
+   * Function to merge two states into a new one.
+   * Must create a new object, so that neither of arguments is modified.
+   * By default, we do shallow merge using <code>Object.assign</code>.
+   * You can use this to do <code>deepmerge</code> instead.
+   * @param into
+   * @param from
    */
-  mergeOption?: MergeOptionType
+  merge?: (into: Readonly<Partial<S>>, from: Readonly<Partial<S>>) => S
 }

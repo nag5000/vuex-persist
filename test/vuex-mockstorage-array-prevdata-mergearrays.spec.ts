@@ -2,6 +2,7 @@
  * Created by championswimmer on 20/07/17.
  */
 import { assert, expect, should } from 'chai'
+import deepmerge from 'deepmerge'
 import Vue from 'vue'
 import { Store } from 'vuex'
 import Vuex from 'vuex'
@@ -19,7 +20,7 @@ const vuexPersist = new VuexPersistence<any>({
   storage: mockStorage,
   reducer: (state) => ({ dog: state.dog }),
   filter: (mutation) => (mutation.type === 'addDogColor'),
-  mergeOption: "concatArrays"
+  merge: (into, from) => deepmerge(into, from)
 })
 
 const store = new Store<any>({

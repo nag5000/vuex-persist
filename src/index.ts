@@ -6,9 +6,6 @@ import { AsyncStorage } from './AsyncStorage'
 import { MockStorage } from './MockStorage'
 import { PersistOptions } from './PersistOptions'
 import SimplePromiseQueue from './SimplePromiseQueue'
-import { merge, MergeOptionType } from './utils'
-
-let FlattedJSON = JSON
 
 /**
  * A class that implements the vuex persistence.
@@ -24,8 +21,8 @@ export class VuexPersistence<S> implements PersistOptions<S> {
   public filter: (mutation: MutationPayload) => boolean
   public modules: string[]
   public strictMode: boolean
-  public supportCircular: boolean
-  public mergeOption: MergeOptionType
+  public JSON: JSON
+  public merge: (into: Readonly<Partial<S>>, from: Readonly<Partial<S>>) => S
 
   /**
    * The plugin function that can be used inside a vuex store.
@@ -52,11 +49,12 @@ export class VuexPersistence<S> implements PersistOptions<S> {
     this.key = ((options.key != null) ? options.key : 'vuex')
 
     this.subscribed = false
-    this.supportCircular = options.supportCircular || false
-    if (this.supportCircular) {
-      FlattedJSON = require('flatted')
-    }
-    this.mergeOption = options.mergeOption || 'replaceArrays'
+    this.JSON = options.JSON || JSON
+
+    this.merge =
+      (options.merge != null)
+        ? options.merge
+        : (into, from) => Object.assign({}, into, from) as S
 
     let localStorageLitmus = true
 
@@ -95,7 +93,9 @@ export class VuexPersistence<S> implements PersistOptions<S> {
             : (
               (state: any) =>
                 (options!.modules as string[]).reduce((a, i) =>
-                  merge(a, { [i]: state[i] }, this.mergeOption), {/* start empty accumulator*/ })
+                  this.merge(a as Partial<S>, { [i]: state[i] } as Partial<S>),
+                  { /* start empty accumulator*/ }
+                )
             )
         )
     )
@@ -106,7 +106,7 @@ export class VuexPersistence<S> implements PersistOptions<S> {
 
     const _this = this
     this.RESTORE_MUTATION = function RESTORE_MUTATION(state: S, savedState: any) {
-      const mergedState = merge(state, savedState || {}, _this.mergeOption)
+      const mergedState = _this.merge(state, savedState || {})
       for (const propertyName of Object.keys(mergedState as {})) {
         // Maintain support for vue 2
         if ((this as any)._vm !== undefined && (this as any)._vm.$set !== undefined) {
@@ -134,11 +134,7 @@ export class VuexPersistence<S> implements PersistOptions<S> {
             (storage).getItem(key)
               .then((value) =>
                 typeof value === 'string' // If string, parse, or else, just return
-                  ? (
-                    this.supportCircular
-                      ? FlattedJSON.parse(value || '{}')
-                      : JSON.parse(value || '{}')
-                  )
+                  ? this.JSON.parse(value || '{}')
                   : (value || {})
               )
           )
@@ -157,12 +153,8 @@ export class VuexPersistence<S> implements PersistOptions<S> {
               key, // Second argument is state _object_ if asyc storage, stringified otherwise
               // do not stringify the state if the storage type is async
               (this.asyncStorage
-                ? merge({}, state || {}, this.mergeOption)
-                : (
-                  this.supportCircular
-                    ? FlattedJSON.stringify(state) as any
-                    : JSON.stringify(state) as any
-                )
+                ? this.merge({} as Partial<S>, (state || {}) as Partial<S>)
+                : this.JSON.stringify(state) as any
               )
             )
           )
@@ -189,7 +181,7 @@ export class VuexPersistence<S> implements PersistOptions<S> {
           if (this.strictMode) {
             store.commit('RESTORE_MUTATION', savedState)
           } else {
-            store.replaceState(merge(store.state, savedState || {}, this.mergeOption) as S)
+            store.replaceState(this.merge(store.state, (savedState || {}) as Partial<S>))
           }
           this.subscriber(store)((mutation: MutationPayload, state: S) => {
             if (this.filter(mutation)) {
@@ -214,11 +206,7 @@ export class VuexPersistence<S> implements PersistOptions<S> {
           : ((key: string, storage: Storage) => {
             const value = (storage).getItem(key)
             if (typeof value === 'string') {// If string, parse, or else, just return
-              return (
-                this.supportCircular
-                  ? FlattedJSON.parse(value || '{}')
-                  : JSON.parse(value || '{}')
-              )
+              return this.JSON.parse(value || '{}')
             } else {
               return (value || {})
             }
@@ -236,11 +224,7 @@ export class VuexPersistence<S> implements PersistOptions<S> {
           : ((key: string, state: {}, storage: Storage) =>
             (storage).setItem(
               key, // Second argument is state _object_ if localforage, stringified otherwise
-              (
-                this.supportCircular
-                  ? FlattedJSON.stringify(state) as any
-                  : JSON.stringify(state) as any
-              )
+              this.JSON.stringify(state) as any
             )
           )
       )
@@ -255,7 +239,7 @@ export class VuexPersistence<S> implements PersistOptions<S> {
         if (this.strictMode) {
           store.commit('RESTORE_MUTATION', savedState)
         } else {
-          store.replaceState(merge(store.state, savedState || {}, this.mergeOption) as S)
+          store.replaceState(this.merge(store.state, (savedState || {}) as Partial<S>))
         }
 
         this.subscriber(store)((mutation: MutationPayload, state: S) => {

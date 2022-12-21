@@ -3,9 +3,7 @@ import typescript from 'rollup-plugin-typescript2'
 import configs from './configs'
 
 const externals = [
-  'deepmerge',
-  'vuex',
-  'flatted'
+  'vuex'
 ]
 
 const genTsPlugin = (configOpts) => typescript({

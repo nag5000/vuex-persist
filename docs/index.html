@@ -104,6 +104,7 @@
 									<li><a href="#steps">Steps</a></li>
 									<li><a href="#constructor-parameters">Constructor Parameters -</a></li>
 									<li><a href="#usage-notes">Usage Notes</a><ul>
+											<li><a href="#deep-merge">Deep merge</a></li>
 											<li><a href="#reducer">Reducer</a></li>
 											<li><a href="#circular-states">Circular States</a></li>
 										</ul>
@@ -145,7 +146,7 @@
 					<li>Works perfectly with modules in store</li>
 					<li>Ability to save partial store, using a <code>reducer</code> function</li>
 					<li>Automatically restores store when app loads</li>
-					<li>You can create mulitple VuexPersistence instances if you want to -<ul>
+					<li>You can create multiple VuexPersistence instances if you want to -<ul>
 							<li>Save some parts of the store to localStorage, some to sessionStorage</li>
 							<li>Trigger saving to localStorage on data download, saving to cookies on authentication result</li>
 						</ul>
@@ -199,9 +200,7 @@
 				So we&#39;ll register it as a ssr-free plugin.</p>
 				<pre><code class="language-js"><span class="hljs-comment">// Inside - nuxt.config.js</span>
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> {
-  <span class="hljs-attr">plugins</span>: [
-    { <span class="hljs-attr">src</span>: <span class="hljs-string">'~/plugins/vuex-persist'</span>, <span class="hljs-attr">ssr</span>: <span class="hljs-literal">false</span> }
-  ]
+   <span class="hljs-attr">plugins</span>: [{ <span class="hljs-attr">src</span>: <span class="hljs-string">'~/plugins/vuex-persist.js'</span>, <span class="hljs-attr">mode</span>: <span class="hljs-string">'client'</span> }],
 }</code></pre>
 				<pre><code class="language-js"><span class="hljs-comment">// ~/plugins/vuex-persist.js</span>
 <span class="hljs-keyword">import</span> VuexPersistence <span class="hljs-keyword">from</span> <span class="hljs-string">'vuex-persist'</span>
@@ -241,12 +240,12 @@
   plugins: [vuexLocal.plugin]
 })</code></pre>
 				<p>(or in Javascript)</p>
-				<pre><code class="language-js"><span class="hljs-keyword">const</span> store = {
+				<pre><code class="language-js"><span class="hljs-keyword">const</span> store = <span class="hljs-keyword">new</span> Vuex.Store({
   <span class="hljs-attr">state</span>: { ... },
   <span class="hljs-attr">mutations</span>: { ... },
   <span class="hljs-attr">actions</span>: { ... },
   <span class="hljs-attr">plugins</span>: [vuexLocal.plugin]
-}</code></pre>
+})</code></pre>
 				<a href="#constructor-parameters--" id="constructor-parameters--" style="color: inherit; text-decoration: none;">
 					<h3>Constructor Parameters -</h3>
 				</a>
@@ -299,17 +298,35 @@
 						<tr>
 							<td>asyncStorage</td>
 							<td>boolean</td>
-							<td>Denotes if the store uses Promises (like localforage) or not (you must set this to true when suing something like localforage) <br><em><strong>Default: false</strong></em></td>
+							<td>Denotes if the store uses Promises (like localforage) or not (you must set this to true when using something like localforage) <br><em><strong>Default: false</strong></em></td>
 						</tr>
 						<tr>
-							<td>supportCircular</td>
-							<td>boolean</td>
-							<td>Denotes if the state has any circular references to itself (state.x === state) <br><em><strong>Default: false</strong></em></td>
+							<td>JSON</td>
+							<td>JSON</td>
+							<td>JSON implementation with <code>parse</code> and <code>stringify</code> methods. By default native <code>window.JSON</code> is used. If you want to support serializing circular json objects, you can use <code>flatted</code> package here.</td>
+						</tr>
+						<tr>
+							<td>merge</td>
+							<td>function<br> (state1, state2) =&gt; state</td>
+							<td>Function to merge two states into a new one. Must create a new object, so that neither of arguments is modified. By default, we do shallow merge using <code>Object.assign</code>. You can use this to do <code>deepmerge</code> instead.</td>
 						</tr>
 				</tbody></table>
 				<a href="#usage-notes" id="usage-notes" style="color: inherit; text-decoration: none;">
 					<h3>Usage Notes</h3>
 				</a>
+				<a href="#deep-merge" id="deep-merge" style="color: inherit; text-decoration: none;">
+					<h4>Deep merge</h4>
+				</a>
+				<p>By default, when the state is restored from the storage, it merges shallowly with
+				the initial state.</p>
+				<p>For deep merging, provide custom <code>merge</code> function in the options. For example, you
+				can use <code>deepmerge</code> package:</p>
+				<pre><code>npm <span class="hljs-keyword">install</span> deepmerge</code></pre><pre><code class="language-javascript"><span class="hljs-keyword">import</span> deepmerge <span class="hljs-keyword">from</span> <span class="hljs-string">'deepmerge'</span>
+
+<span class="hljs-keyword">const</span> persist = <span class="hljs-keyword">new</span> VuexPersistence({
+  <span class="hljs-attr">merge</span>: <span class="hljs-function">(<span class="hljs-params">into, <span class="hljs-keyword">from</span></span>) =&gt;</span> deepmerge(into, <span class="hljs-keyword">from</span>),
+  ...
+})</code></pre>
 				<a href="#reducer" id="reducer" style="color: inherit; text-decoration: none;">
 					<h4>Reducer</h4>
 				</a>
@@ -334,9 +351,11 @@ x.x === x.x.x <span class="hljs-comment">// true</span>
 x.x.x.a === x.x.x.x.a <span class="hljs-comment">//true</span></code></pre>
 				<p><code>JSON.parse()</code> and <code>JSON.stringify()</code> will not work.
 				You&#39;ll need to install <code>flatted</code></p>
-				<pre><code>npm <span class="hljs-keyword">install</span> flatted</code></pre><p>And when constructing the store, add <code>supportCircular</code> flag</p>
-				<pre><code class="language-js"><span class="hljs-keyword">new</span> VuexPersistence({
-  <span class="hljs-attr">supportCircular</span>: <span class="hljs-literal">true</span>,
+				<pre><code>npm <span class="hljs-keyword">install</span> flatted</code></pre><p>And when constructing the store, set <code>JSON</code> option to <code>FlattedJSON</code>:</p>
+				<pre><code class="language-js"><span class="hljs-keyword">import</span> FlattedJSON <span class="hljs-keyword">from</span> <span class="hljs-string">'flatted'</span>
+
+<span class="hljs-keyword">new</span> VuexPersistence({
+  <span class="hljs-attr">JSON</span>: FlattedJSON,
   ...
 })</code></pre>
 				<a href="#examples" id="examples" style="color: inherit; text-decoration: none;">
@@ -546,9 +565,6 @@ router.beforeEach(waitForStorageToBeReady)
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_index_.html">&quot;index&quot;</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_utils_.html">&quot;utils&quot;</a>
 					</li>
 				</ul>
 			</nav>
